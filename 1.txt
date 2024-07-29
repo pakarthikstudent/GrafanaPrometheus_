@@ -1,0 +1,249 @@
+Good Morning All
+
+Welcome to Monitoring and Alerting cloud services via Grafana, Prometheus Training 
+	   ==============================================================
+
+This is Palani Karthikeyan (Call me: Karthik) - Trainer 
+
+We will start session @ 9:30 AM IST
+               
+################################################################################
+
+[ Grafana ] --------------------------[DataSource: prometheus;influxdb,...cloudexporters]
+  - Visualization - Dashboard
+
+
+ Grafana + prometheus 
+	   ----------(measurement - float) -> Y-axis
+
+ Grafana + Loki (logger - text)
+	   ----
+ Grafana + tempo (trace - text+float) -micro
+	   -----
+####################################################################################################
+
+ Grafana - (Visualization)
+
+ Grafana + RandomQuery
+ |
+ Grafana + Influxdb(TSDB)
+ |
+ Grafana + Prometheus(TSDB)
+
+
+ Grafana - Visualization
+
+    |______ Collect data from <DATASOURCE>
+				|__TSDB,RDBMS,CloudExporters,Excel,CSV,Logger...
+ 
+    |______ Create visualization ->export ; share to other user/team
+			|
+		 we can dynamic updates
+
+
+ Dashboard - 1 or more panels
+			|
+			panel - visualization
+			|
+			set of attributes - properties //mutable - we can modify the value
+			.................
+
+###########################################
+
+download grafana 
+	  |
+	  grafana-server.exe  <== Winx
+	  grafana-server.service  <= Linux like os
+
+OS - Kernel
+	|----->File,Process
+
+File - Data - under the storage
+Process - Data - under the CPU 
+.......
+
+	User Process	Vs 	system process
+	|
+	open a broswer		grafana-server.exe (or) grafana-server.service
+	|			|__Running state
+	IP:<port>/		
+	|			grafana-server.exe (or) grafana-server.service <== File,Process
+	Login:				
+	password:
+	|
+	Dashboard
+	....
+	...
+
+###########################################
+
+Download ->grafana from grafana.com
+
+|__ open a broswer ->on the addressbar => IPAddress:3000
+
+3000 - default port 
+----
+
+		Login: admin
+		|
+		password: admin
+		
+		(skip) 
+			
+########################################################
+
+
+
+prod_salesCount	  prod_Cost
+100		     500
+1500                 300
+15		     2300
+ 3000   |
+ 2300   |   *
+ 1000   |
+ 500    |               *
+        |
+ 300    |                                 *
+        |
+ 100    |    
+  ------|---------------------------------------------
+        |   15   20    100     500   1000 1500   2000
+
+
+
+	admin -> P1 - lib - swap
+	-----
+	 Vs	
+	userA -> swap ->import lib panel  ... //link Vs unlink
+	userB -> swap ->import lib panel 
+
+#################################################################################
+
+ JSON 
+ -----
+   |--->int float str bool(true false) null 
+   |
+   |--->array
+   |--->object
+
+
+ array - collection of ordered items - index based [10,13.4,'data',true,null] 
+ |
+ object - collection of unordered items - key based {K1:10,K2:13.4,K3:'data',K4:true,K5:null}
+							
+ {K1:10,K2:13.4} # 1Key ->1Value
+
+ {K1:[10,20,30,'Data1','Data2'],K2:[100,200,300]} // 1Key ->more than one value //array
+
+ {K1:{K1:'V1',K2:'V2'}} //1Key ->more than one value
+				---------------------//object
+ ProjectA/
+	 |__ Data/...
+	 |__ p1.json
+ -----------------------
+	|__________________________Copy this ProjectA to local m/c
+						Linux like os:  /var/lib/grafana/Data
+				  |__open a grafana -> + ->import p1.json file
+								.....
+
+------------------------------------Vs------------------------------------------------
+
+ ProjectB/
+	 |__ p1.json
+		|__ { K1: [] ,.... K:'select *from table'}
+ ----------------------- 
+	|__________________________Copy this ProjectB to local m/c
+				  |__open a grafana -> + ->import p1.json file
+								.....
+								BadGateWay Error
+########################################################################################################
+
+TSDB
+-----
+ data - indexed with time
+
+ insert into ..... <data1> --->| data1 |Timestamp|  ->    data1 | 
+					.........              -|-----------
+					                           time X-axis ->
+InfluxDB
+
+table ->measurement
+
+Columns ->Tag /field
+
+insert <measurement> ..... ..... //Timestamp
+			....
+
+
+create database <DBName>;
+
+show databases{Enter}
+
+use <DBName> {Enter}
+
+insert <measurement>,field=Value ...
+|
+select *from <measurement>
+
+
+
+create database demo1
+show databases
+use demo1
+show measurements
+insert cpuUsage,host=host01,region=us-east value=98.34
+select *from cpuUsage
+
+#######################################################################################
+
+ Grafana - DataSource(DB,CloudExporter,File(excel,csv,json),RDBMS,logger,..)  
+ -------
+
+ Step 1: Goto DataSource settings
+ |				
+ Step 2: Select DataSource
+ |
+ Step 3: http end points - type your logical dbname
+			 - db-port
+			 - ...
+			 - <Save and Test> -->[ OK - GreenColor ]
+ ---------
+ |
+ Step 4 ->DashBoard ->Create new dashboard ->panel
+						|
+						<Configured DataSource is selected>
+
+
+> create database demo1
+> show databases
+> use demo1
+> show databases 
+name: databases
+name
+----
+_internal
+demo1
+>
+> insert cpuUsage,host=host03,region=us-west value=46.34
+
+> show measurements
+name: measurements
+name
+----
+cpuUsage
+>
+> select *from cpuUsage
+name: cpuUsage
+time                host   region  value
+----                ----   ------  -----
+1722251174926575000 host01 us-east 98.34
+1722251260041806200 host01 us-west 89.32
+1722251276358954300 host02 us-west 45.23
+1722251290231538800 host03 us-west 91.35
+1722251815804285900 host03 us-west 67.32
+1722252505269048100 host03 us-west 56.34
+1722252605002755600 host03 us-west 96.34
+1722252806672584100 host03 us-west 46.34
+1722253773298381800 host03 us-west 46.34
+1722254477951119700 host03 us-west 46.34
+###################################################################################################
