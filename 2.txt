@@ -1,0 +1,251 @@
+Recap
+-------
+Grafana 
+  - dashboard - 1 or more panels
+			   |->visualization
+			   |->panel attributes - mutable
+
+  - grafana + randomQuery ->dashboard
+
+  - panel / dashboard - json
+			-----//[] {}
+  - we can edit json data - import json file to grafana dashboard.
+  - share
+	|->json
+	|->link
+	|->snapshot
+  - Manage
+	|->create/delete new Folder
+	|->move / delete the dashboard
+	|->playlist
+  
+Datasource - TSDB (InfluxDB)
+ |
+ |-> Add data datasource
+	->http end points - updated influx db - port ->dbname ->OK
+
+Grafana + randomQuery
+Grafana + InfluxDB
+##################################################################################################
+
+Dynamic Dashboard
+	
+ ->variable
+ ->annotation
+	|->Region annotation
+	|->Query annotation
+
+ ->alert
+ ->grafana-cli 
+ ->oci exporters
+ ->admin
+    ->new user
+ ...
+
+###################################################################################################
+
+variable - placeholder - holding a value
+
+myvar  |  value |
+ |
+ |_label
+     
+   $myvar
+
+  Regx pattern 
+  --------------
+
+  /^$variable$/
+    ---------
+
+ ^pattern - line starts with pattern
+
+ ^root -> root asfsfsafs //OK
+
+	  userA:root //Not-Matched
+	  
+ pattern$  - line ends with pattern
+ 
+ root$  --> asdfafadsfdasfdsa root //OK
+	    root,
+	    userAroot:
+	    root:x
+	   -----------//not-matched
+
+ ^pattern$ -> pattern only
+  -------
+             ^root$  ->root //OK
+			root: //Not matched
+			:root //Not matched
+			root<>//Not matched
+
+  myhost | Query |
+  ------
+   |___ $myhost
+
+   /^$myhost$/
+     -------
+        |->pattern only 
+
+
+
+ = <== Relation operator
+ Vs
+ =~ <== Regx operator (or) match operator(or) bind operator
+
+ sales = sales //OK
+
+ sales = sales, //Not-matched 
+
+ sales =~ sales //OK
+
+ sales,sadfssdfs =~ sales //OK
+ -----           ---
+		  |->like grep,finstr commands
+
+ 
+#################################################################################
+start influxdb - daemon
+|
+open influx client
+|
+> show databases
+> use demo1
+> show measurements
+> insert cpuUsage,host=host04,region=us-east value=87.32
+
+> insert cpuUsage,host=host04,region=us-east value=67.23
+> select *from cpuUsage
+|
+Go To Grafana  
+	|-> Create a new dashboard
+				|
+				add a new panel
+				|
+				select your measurment 
+				field value
+				// see the data point
+				save this dashboard
+	|->On the dashboard - top settings <== dashboard settings
+				  |
+				Click the dashboard settings
+				|
+				Variable ->Add variable 
+						|
+						mynode   |  query type|
+						|
+						show tag values with key="host"
+						|
+					// see the preview in the bottom page
+						|
+						update ->save 
+		On the dashboard page
+		|
+		mynode   |    | <== user selection
+			
+		|
+		Query editor =>  		where +  
+						      |__Click
+							 host =~ /^$mynode$/
+______________________________________________________________________________________________
+
+Task
+-----
+ |->Create a new dashboard
+	|
+	[Gauge-panel]
+	 - swap
+	 |
+	datasource: random
+	 |
+	duplicate this panel -> [Gauge-panel] ->duplicate this panel [ Gauge-panel] 
+				 - RES					- Free
+
+	|->TimeSeries ->duplicate this panel
+	   idle     -> wait  -> irq 
+
+|->create a row ->meminfo
+|->create another row ->cpuinfo
+
+|->Save this dashboard ->export json file.
+-----------------------------------------------------------------
+Task
+-----
+ |-> Create a new dashboard 
+    ->[TimeSeries]	- Increase datapoint
+	|		- Variable - based on host ->select and display Meminfo datapoints
+			- Annotation
+				|->Query - condition based
+   InfluxDB: Meminfo		|->Region annotation 
+		|	
+		insert Meminfo,host=host01 value=53.32
+		
+ |->Save this dashboard ->view json ->export to file
+------------------------------------------------------------------
+
+Grafana 8.1.5/
+	      bin/grafana-cli  install <plugin> <pluginName>
+		|  grafana-server <== restart is requiured
+		|
+		data/
+	          |_plugin/
+			   <pluginName>
+
+
+yum install grafana
+..
+systemctl status grafana-server 
+running 
+9.5 - version
+
+
+cd Grafana 8.1.5/
+	      bin/grafana-cli  install <plugin> <pluginName>
+		|  grafana-server <== restart is requiured
+
+
+open grafana -> 127.0.0.1:3000/datasources/
+				...//there is no updates
+
+
+
+[DEFAULT]
+user=ocid1.user.oc1..aaaaaaaaln5t455ln7ebedl42hr7adv6ham47jzbzoqawtqktylsvvrzvyiq
+fingerprint=c1:70:2d:75:fd:57:3b:57:1a:0a:64:83:45:8b:da:f9
+tenancy=ocid1.tenancy.oc1..aaaaaaaaxgtsxmor7c4tg7cn2vgdrx3n7ne4qgx7cwsomq43yey4gjomro4q
+region=us-ashburn-1
+key_file=<path to your private keyfile> # TODO
+
+
+[OCI]	[App] [VirtualBox] [node] [DB] [Flask] [LXC] [aws] [gcp] ...N
+  |	|_____   |          |      |     |       |     |    |       |
+		 |     -------------------------------------------------
+  |___________[ Prometheus]
+	.......... /// --------promQL -----------[Grafana] ->Visualization
+		
+		Vs
+
+				[OCI]-----------[Grafana ]->Visualization
+				 |	....
+				cloud metric details
+
+
+
+alert
+------
+ 1. alert notification channel - configure
+ 2. alert rules - condition based 
+
+
+https://data.covid19india.org/v4/min/timeseries.min.json
+
+Reference
+https://grafana.com/docs/grafana/latest/dashboards/variables/
+https://play.grafana.org/d/bdnahipisghdsa/getting-started-with-grafana-play?orgId=1
+https://play.grafana.org/d/000000074/alerting?var-app=backend&var-server=backend_01&var-server=backend_03&var-interval=1h&orgId=1
+
+https://play.grafana.org/dashboards/f/KbH7u4Pmz/demo3a-influxdb
+https://play.grafana.org/d/a42e82b0-1971-4dc9-8a74-7577142f19a3/8b9cb853-54c5-51bb-b17e-8bab90267e5f?orgId=1
+
+nested variable
+https://play.grafana.org/d/testdata-nested-variables-drilldown/
