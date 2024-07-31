@@ -1,0 +1,367 @@
+prometheus 
+----------
+
+Grafana + Prometheus(dataSource - TSDB)
+ |____________|
+
+
+1. YAML 
+---------
+	1. prometheus config file - yaml format	 		
+	2. record rules - yaml 
+	3. alert rules - yaml
+
+2. Create unit file <or> service file
+---------------------------------------
+
+	[fileA] <== .exe (or) binary file
+	-------
+	 |__run this file ->process ->R+ ------------->exit state
+				      ---//active	//inactive
+				
+
+YAML
+-----
+ |->key: value //file format
+	 |
+	 |__ int float str bool
+	 |__ array
+	 |__ hash
+
+ Key:<space>Value
+ 
+
+ K1: [V1,V2,V3,..Vn]
+
+  <or>
+
+ K1:
+ - V1
+ - V2
+ - V3
+ ..
+ - Vn
+
+ K1:
+ -<Space>V1
+ -<Space>V2
+ ..
+ -<Space>Vn
+	
+
+ K1: {Key1: V1,Key2: V2,...Kn: Vn}
+ --- =============================
+  <or>
+
+ K1:
+ <><>Key1:<>V1
+ <><>Key2:<>V2
+ ..
+
+ Key:<space>Value
+ <><>Key1:<>V1
+
+<> - 1space
+---------------------------------------------------------------------------------------------
+ 
+
+metric format
+==============
+						 |->float value
+<metricName>{Key1=Value,Key2=Value2,...Kn=Vn}  <FinalValue>	<timestamp>
+            |_______________________________|	 Y-axis		  X-axis
+			label			
+
+node1 - prometheus
+| ---------------------- node2,node3,Mysql,Django,LXC cloud ... //endpoints
+			 |	|	|	|  |
+ ------------------------|	|	|	|  |
+ ---------------------------------------------------
+localhost
+
+Grafana + Excel/Json - Grafana Alert - notify channel
+
+Grafana + prometheus 
+	   |->alertmanager - notify channel
+
+
+file:p1.py
+---------------
+
+
+---------------// --><ip:<port>>
+			|------------------> python_gc
+					     python_cpu
+ |								|
+								node5
+------------------						----------
+  Django 							 |app1| ..|s/w|
+  mysql 					Vs		___________
+  webserver								|
+------------------							node_cpu
+   |-------><ip:<port>>							node_memory
+		 |-------------------->django_cpu
+				       django_mysq_cpu
+
+##################################################################################################
+
+influx DB		prometheus DB
+- TSDB			- TSDB
+|
+- like SQL		- promQL - <metricName> 
+ insert			  ......
+ update			  
+ drop
+ select
+
+- prodSalesdetails	- resource related monitoring //measurement
+ influxDB ->Grafana ->Visualization
+
+##################################################################################################
+
+Convert user process -> system process
+			...............
+
+ User process					System process
+ ------------					-----------------
+ by user					not created by user (Linux like os: by systemD;init)
+ |						-------------------
+ TTY/pts/port					TTY: ?
+ |						|
+After login our system				while os loading time / booting time 
+then user IO //user process			|
+ |						system process - runlevel 
+start ->Running ->exit				//before login our shell <or> interface 
+	||	  .....				|
+	stop					session leader (SID)
+						
+
+p1 - 101  p2 - 102  p3 - 103	p4 - 104   p5 - 105  p6 - 106  p7 - 107  p8 - 108
+............................    .................... ............................
+ PGID:101			  PGID:104		 PGID:106
+
+ p1 p4 p6
+............
+SID: 101
+
+ PID	PGID	SID
+ 103	101	101
+ 108	106	101
+ 101	101	101 <==
+
+filename.service
+--------------------
+[Unit]
+Description=<our service description>
+[Service]
+ExecStart=<file-executable>
+[Install]
+WantedBy=multi-user.target
+
+/bin/file <== executable file
+
+/etc/file <== configuration file
+			
+/etc/systemd/system/file.service <== service file
+			|
+			ExecStart=/bin/file --config=/etc/file
+
+#############################################################################################
+
+Key1: [{job_name: V1},{job_name: V2},{job_name: V3},..{job_name: Vn}]
+ |
+Key1:
+- job_name: V1
+  ....
+- job_name: V2
+  ..
+
+- job_name: V3
+  ..
+- job_name: mysql
+  ...
+  ...
+- job_name: Vn
+---------------------//endpoints
+ wget https://github.com/prometheus/prometheus/releases/download/v2.54.0-rc.0/prometheus-2.54.0-rc.0.linux-amd64.tar.gz	
+ |
+ tar -xvzf 
+############################################################################################
+
+ =~
+ !~
+ ---//Regx (or) bind operators
+
+ {Key =~ regxpattern}
+
+^pattern ->matches the pattern line starts
+
+pattern$  ->matched the pattern line ends
+
+^pattern$ ->pattern only style 
+
+. (dot) ->match any single character
+.* ->List of all 
+
+v.* ->v<char>list of all
+v* ->v<char>list of all
+     Anychar list of all
+
+<pattern>* ->zero or more 
+
+ [] ->character class
+ --
+ [Aa]run
+ --------->Arun arun //OK 
+ ARUN //Not-matched
+
+ OL[567] -> OL5 OL6 OL7
+ -------//3 chars
+ OL[5-7] ->OL5 OL6 OL7
+
+ OL[57]  ->OL5 OL7
+ ------//3chars
+
+prometheus_http_requests_total{code =~ "[3548][0-9][0-9]"}
+					3<anyTwodigits>//
+					5<anyTwodigits>
+					4<anyTwodigits>
+					8<anyTwodigits>
+
+[a-z]
+[A-Z]
+[a-zA-Z] - match any alpha
+[a-zA-Z0-9]- match any alpha numeric 
+
+<pattern1>|<pattern2> <== alternate pattern - like logical OR
+
+code =~ "2[0-9][0-9]|3[0-9][0-9]"
+	 ----------  ------------
+
+job_name =~ "prometheus|node1|oci|aws" 
+
+(Pattern1)(Pattern2) - both pattern should match same order  - like logical AND
+ ---->------->
+
+ + <== 1 or more Vs * <== zero or more
+
+ab+c -> abc abbbbbbbbbbbbbbbbbbbbbbc //OK
+ 	    abbbbbbbbb,bbbbbbbbbbbc //Not-matched 
+ 
+[0-9]+ <== 1 or more digits
+
+[a-zA-Z]+[0-9]$
+ --------====== //1 or more alpha and ends with any single digit 
+
+<Pattern>{n} - n times
+
+ab{2}c => abbc //OK
+	 abc
+	 abbbc 
+	-------//Not-matched 
+prometheus_http_requests_total{code =~ "[3548][0-9]{2}",handler =~ "/api/.*range"}
+
+
+
+<Pattern>{n,m} - minimum n times maximum m times
+
+ab{3,5}c => abbbc abbbbc abbbbbc //OK
+
+
+   [a-z]  - match any lowercase chars
+
+  ^[a-z] - starts with any lowercase chars  Vs  [^a-z] - NOT MATCHING ANY LOWERCASE Chars
+						 
+   [a-z]$ - ends with any lowercase chars
+
+	[^a-zA-Z0-9] - Not Matching any alpha and numbers
+
+ prometheus_http_requests_total{handler =~ "[^a-zA-Z0-9]"} //match any specialchars
+	
+ prometheus_http_requests_total{handler =~ "[:,@\.]"}
+
+ "sales" = "sales" //Ok
+ "sales," = "sales" //Not-Matched
+
+	Vs
+ "105,raj,sales,pune,1000" =~ sales //OK
+			   ---
+
+^pattern		pattern1|pattern2	^http|org$ <== any one pattern is matched - OK
+pattern$
+			(pattern)(pattern2)	^(http|https).*(org|com)$ <== both pattern should match
+^pattern$		<pattern>+
+[]			<pattern>{}
+^[]				 --->   <pattern>{n} - n times 
+[]$					<pattern>{n,} - minimum n times
+[^]					<pattern>{n,m} - minimum n times maximum m times
+
+			[0-9]{2,4}  56   542 4567//OK
+				   5 342342//Not-Matched 
+
+#######################################################################################################
+node exporter:
+--------------
+
+  [ prometheus-server]		[node1]
+    localhost:9090		     |____ OCI instance - OL8 
+		 <---------------->
+			|->network configuration ping <ip>
+
+ 				[node]
+				- remote node
+				- download node_exporter -> wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz
+				- Extract node_export file
+				- run this exporter file //process
+ - prometheus.yml
+ |
+ - <update remotenode details>
+
+ - [remote_node_IP:9100]
+  	 
+ - restart prometheus 
+ |
+ - prometheus endpoint
+    - localhost:9090
+    - remote_node_IP:9100
+      		|
+		remote_node_IP:9100/metrics
+		|
+		node_<....>
+		node_<....>
+
+ +--------------------------+
+ | Ubuntu - prometheus 
+ | 
+ +--------------------------+
+    |_ OL1 - node_exporter 
+    |_ OL2 - node_exporter
+  
+ 
+ [Ubuntu ] ----------[ OL1 ]
+   |  |______________[ OL2 ]
+   |
+   |
+ prometheus.yml
+#######################################################################################################
+
+pushgateway
+------------
+batch jobs
+|
+post 
+|
+[ ]<== pushgateway
+ | 
+ |___pull - prometheus 
+pushgateway:9091
+ |
+ |->localhost:9091
+ |->remoteIP:9091
+
+wget https://github.com/prometheus/pushgateway/releases/download/v1.9.0/pushgateway-1.9.0.linux-amd64.tar.gz
+
+myvar=56
+echo "v value is:$myvar"|grep -v $|curl --data-binary @- http://localhost:9091/metrics/job/my_job/instance/localhost:9091
+##################################################################################################################################
+
