@@ -1,0 +1,419 @@
+Recap
+--------
+ prometheus
+  - monitoring tool - datasource - TSDB
+  - metricName {Key1=Value...Kn=Vn}   value
+		----------------//label
+  - regx operators - filter label
+    =~ !~
+
+  - localhost:9090
+  - remote_node -Linux ->node_exporter :9100
+  				|
+				collector(filesystem,memory,cpucollector..)
+  - prometheus.yml
+	...
+  - pushgateway - shortlived jobs :9091
+			
+		[job]-->pushgatway--<--pull the metrics -- prometheus
+
+###################################################################################################
+promQL
+ - prometheus metric types
+ - promQL
+ - record rules - p1.yml <== 
+ |
+ - Application Monitoring 
+ |
+ - Alert Management
+
+prometheus metric types
+--------------------------
+1.counter  - always increment (the value won't decrement)
+2.gauge	   - increment and decrement
+
+3.summary  - observation
+4.histogram - observation ->unit bucket
+
+
+<metricName> counter 
+  |-------------------------->N N++ N++ 
+
+<metricName> gague 
+  |----------------------------> N N++ N-- N++ N-- 
+
+Aggregation 
+ -> Grouping
+       without
+       by
+ -> Operators 
+       sum
+       count
+       avg
+       min and max
+       topk
+       bottomk
+Binary Operation
+ -> arithmetic
+ -> relational
+ -> logical
+ -> one to one
+ -> Many value to Many value
+ 
+Functions
+ -> Change Type
+       scalar 
+       vector
+ -> Math
+ ->Time and Date
+ -> Metric type based functions
+	Counter -> rate()
+	Gauge -> aggregation
+
+
+<number> - scalar (ex: 10 10.34  10+20 2343 -1 45.3) -> we can see the graph
+NaN - Null
+
+function() ->scalar  -> we can see the graph
+	
+	Vs
+
+<metric>{Label} ->Value <== Instant vector -> we can see the graph
+
+	Vs
+<metric>{Label}[duration] -> multiple value <== Range vector -> we can't see the graph
+
+
+
+Aggregation 
+ -> Grouping
+       without
+       by
+
+
+node_network_receive_bytes_total
+node_network_receive_bytes_total{device = "eth0"}
+node_network_receive_bytes_total{device = "eth0"}[5m] ->range_vector
+
+rate(node_network_receive_bytes_total{device = "eth0"}[5m]) ->SingleValue
+								....
+|
+sum() ()
+####
+
+
+(rate(prometheus_http_request_duration_seconds_sum[5m]) / 
+   rate(prometheus_http_request_duration_seconds_bucket[5m])) >10000 
+ and
+( rate(prometheus_http_request_duration_seconds_sum[5m]) >1))
+
+
+
+
+(prometheus_http_request_duration_seconds_sum[5m] / 
+   prometheus_http_request_duration_seconds_bucket[5m]) >10000 
+ and
+( rate(prometheus_http_request_duration_seconds_sum[5m]) >1)) on() hour() >9 <17
+
+
+#######################
+max 		->  avg by(<label>)(rate(<metricname>[duration]) * 100)
+
+max_over_time 	->  max_over_time(avg by(<label>)(rate(<metricname>[duration]) * 100))
+
+		     max_over_time(node_cpu_seconds_total{mode = "idle"}[5m])
+
+increase(v range-vector)[duration]  	Vs rate(v range-vector)[duration]
+-----------------------------------	   ----------------------------------
+->To calculate the absolute change over	    ->Calculates the average requests per second over
+a time period.		                      a period
+
+################
+
+timestamp()
+up 
+timestamp(up) - when the last scrape started for each target.
+-------------
+max_over_time(process_resident_memory_bytes[1h])
+max without(instance)(max_over_time(process_resident_memory_bytes[1h]))
+
+avg_over_time(rate(<metric>[duration])) ->error 
+	      ^^^^//
+		rate(metric[duration])
+
+https://prometheus.io/docs/prometheus/latest/querying/functions
+
+
+
+echo "5AB102cd346" [0-9]+
+		|________\d+ ->($1):  => 5: 102: 346:
+			  |_____|	  |    |    |
+
+##############################################################################################
+Record rules
+---------------
+ ->Separate file //rule file ->filename.yml
+
+<s> - single space
+
+Syntax:-
+-------------
+groups:
+-<s>name:<s><Userdefined_GroupName>
+  rules:
+  -<s>record:<s><userdefinedruleName> <== This must be unique within rule file
+      expr:<s>promQL
+  -<s>record:<s><userdefinedruleName>
+      expr:<s>promQL
+
+
+file: p1.yml
+---------------
+groups:
+- name: example
+  rules:
+  - record: myrule1
+    expr: sum without(instance)(rate(process_cpu_seconds_total{job="node1"}[5m]))
+
+
+
+# in yml multiline statement
+# 
+key: >x
+<s><s>statement1
+      statement2
+      statement3
+#-------------------------
+<s> - 1 space
+<s><s>- 2 space
+------------------------------
+
+file: p2.yml
+---------------
+groups:
+- name: example
+  rules:
+  - record: myrule2
+    expr: >
+      sum without(instance)(
+      rate(process_cpu_seconds_total{
+      job="node1"}[5m])
+      )
+-------------------------------------------//multiline statement 
+
+   
+
+file: p3.yml
+---------------
+groups:
+- name: example
+  rules:
+  - record: job:proces_cpu_seconds:rate5minutes
+    expr: >
+      sum without(instance)(
+      rate(process_cpu_seconds_total{
+      job="node1"}[5m])
+      )
+
+
+
+file: p4.yml
+---------------
+groups:
+- name: example
+  rules:
+  - record: myrule1
+    expr: sum without(instance)(rate(process_cpu_seconds_total{job="node1"}[5m]))
+  - record: myrule2
+    expr: promQL
+  - record: myrule3
+    expr: promQL
+  - record: myrule4 
+- name: dev
+  rules:
+  - record: myruleA
+    expr: sum without(instance)(rate(process_cpu_seconds_total{job="node1"}[5m]))
+  - record: myruleB
+    expr: promQL
+  - record: myruleC
+    expr: promQL
+  - record: myruleD
+
+#############################################################################################
+Application Monitoring
+-----------------------
+	|->code
+	   
+	import<or>source<or>Include <prometheus lib file>
+	|
+	<lib file>.Counter - classname,function ->object/variable/function - userdefined metric
+		   Gauge   - classname,function ->object/variable/function - userdefined metric			
+		   Summary - classname,function ->object/variable/function - userdefined metric
+		   Histogram - classname,function ->object/variable/function - userdefined metric
+	
+	userdefined metric -start a new http process
+
+	[code] ->[result]
+	   |
+	 http_server(<port>)
+			|--------------prometheus:9090
+					<code> - endpoint
+
+
+	code.HTTPserver('IP',5555) //result
+	|
+	|
+	startup_http(8000)
+	------------------
+	|-> starts up a HTTP server on port 8000 to serve metrics to prometheus.
+			
+   E:\	
++-----------+
+| file:ab.py|		file:p1.py			file:p2.py
++--------------+	-------------			-----------
+| app="flask" |		 import ab			 pid = 101
+| port=5000   |		 print(ab.app,ab.port)		 print(pid)
++-------------+		--------------------		-----------
+ E:\>python ab.py	 E:\>python p1.py		
+ E:\> <empty >		 flask 5000 			file:p3.py
+			 E:\>				----------
+  |__ loadable file		|			import ab
+ 				|			import p2 ->it will execute - display 101
+				ab.app|flask
+ __main__.app | flask 		ab.port|5000
+--------------|--------
+__main__.port | 5000
+
+
+########################################################################################
+file: test1.py
+----------------
+def display():			=>	
+	print("Hello")			if __name__ == '__main__':
+----------------				display()
+python test1.py				-----------------------
+<empty>					python test1.py <== running this file
+					Hello		
+
+file:p1.py
+------------
+import test1 <====loadable
+test1.display()
+----------------
+python p1.py
+Hello
+########################################################################################
+ 
+ student@host~]$ sudo pip3 install prometheus_client 
+ ..
+ -----------------------------------------------------
+
+In python Code
+prometheus metric type -> python class
+counter	->Counter('custometric')
+		   |	
+		constructor
+
+
+	port:8000 -------->port:8001	-> |localhost:8001|
+		|				|_Hello ..//Result
+		|
+		|______prometheus:9090
+			- python
+			
+
+	--------|  prometheus - TSDB |
+	--------|		     |
+	--------|		     |
+        --------|		     |
+		+--------------------+
+
+
+######################################################################################################
+p1.py
+p2.py
+p3.py
+...
+pn.py
+		
+p1.c
+p2.c
+..
+pn.c
+
+	Webframe work
+	--------------
+	  p1.html p1.py -<business logicCode->
+	  webserver 
+	  mysql  
+	  template
+	-------------
+	   |<----------------------------------prometheus
+
+
+
+	|---------------------------|
+	|  [ Flask App - http
+  	|  [   port:5000 ]
+	|	:3306
+	|	:3333
+	+---------------------------+
+		| <http-server>
+		port:8000
+		|
+		|___________________prometheus:9090
+					|
+					127.0.0.1:8000/metrics
+					flask....
+					python...
+					mysql ...
+					http.....
+					
+	+----------------------+
+	|	<App>	       |
+	+----------------------+
+		  |------------<-------prometheus
+###############################################################################################
+ unzip flask-promethus
+ cd flask-prometheus
+ ls
+ main.py flask_prometheus ...
+		
+ cd flask_prometheus
+ ls
+ __init__.py 
+ cat __init__.py {Enter}
+ 
+ cd ..
+ cat main.py 
+ # flask code
+
+ docker-compose up -d
+ docker ps
+ curl localhost:5000 {enter}
+ curl localhost:5000/query {Enter}
+ curl localhost:5000/sleep {Enter}
+ 
+ curl localhost:8000/metrics
+  ...
+ flask...
+ ...
+------------------------
+>>> from prometheus_client import start_http_server
+>>>
+>>> if __name__ == '__main__':
+...     start_http_server(8000)
+...     # your code logic
+...
+(<prometheus_client.exposition.start_wsgi_server.<locals>.TmpServer object at 0x000002AD6E98EDB0>, <Thread(Thread-1 (serve_forever), started daemon 9420)>)
+>>>
+>>> import os
+>>> os.getpid()
+9692 <======= running python PID(processID) 
+#############################################################################################################################################################################
+
+
+
+
+
+
