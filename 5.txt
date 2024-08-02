@@ -1,0 +1,342 @@
+promQL
+
+alert rule 
+- promQL with conditional 
+
+record rules				Vs		alert rules
+- record: <ruleName>					- alert: <alertRulename>
+  expr: promQL						  expr: promQL condition
+
+groups:
+- name: node_rules
+  rules:
+  - record: job:up
+    expr: avg without(instance)up{job="node1"}
+  - alert: ManyInstanceDown
+    expr: up == 0
+
+file:p2.yml
+--------------
+groups:
+- name: node_rules
+  rules:
+  - alert: ManyInstanceDown
+    expr: up == 0
+
+
+
+groups:
+- name: node_rules
+  rules:
+  - record: job:up
+    expr: avg without(instance)up{job="node1"}
+  - alert: ManyInstanceDown
+    expr: job:up:avg{job = "node1"}<0.3
+
+#############################################################################
+
+alert: <alert name>
+expr: condition based promQL
+for: <duration>
+labels:
+  severity: <severitylabel> (ex: critcal; warining; high ; ticket ..)
+annotations:
+  summary:  {{Template variable}} # additional information about alert message 
+  	    --------------------
+  description:
+	    Multline statement //follow jinja template code
+		
+annotations:
+  summary: 'Instance {{label.instance}} - value is:{{$value}}'
+				
+
+jinja Template
+--------------
+ {{$variable}} 
+   --------
+
+annotations:
+ summary: 'There are few instances are down'
+ description: >
+   Down instance:{{range var "up{job=\"node\"} == 0"}}
+	{{ .Labels.instance }}
+	{{end}}
+ dashboard: <dashboardURL>
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+ htmlPage
+ |            _______________
+ CountryName:|___value______|
+
+		|_______<h1><font color=green>CountryName:{{var}}</font></h1>
+							  ========
+			--------------------------------------------------------
+		
+ {{variable}}
+ {{expression}}
+ {%if condition %}
+  ..
+ {%end if%}
+
+ {{for v <collection>}}
+    {{v}}
+  {{end for}}
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+p1.yml
+----------
+groups:
+- name: example
+  rules:
+  - alert: cpuUsage
+    expr: (avg by(instance,job)(rate(process_cpu_seconds_total[5m]))*100) >0.35
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "node {{$labels.instance}} cpu utilization is high value:{{$value}} job name is:{{$labels.job}}"
+
+alert manager
+ |
+ 1.download - alertmanager - exporter ->execute //process - alertmanager.service
+
+ 2. update channel details to alertmanager (alertmanager.yml)
+				
+
+1st create promqL ->condition True ->prometheus push the alerts to alertmanager
+									|
+									notify the channel 
+
+slack configuration
+----------------------
+step 1: https://organization.slack.com/apps {enter}
+					|
+				step 2: [ manage ]
+					 |
+				
+  customintegrations <== step 3
+		|
+		incoming webhook <== step 4
+		|
+		add a configuration <== step 5
+		|
+		[choose channel ]<== step 6
+		 ..
+		Incoming webhosts
+		 ..
+		webhook URL:https://hooks.slack... <== step 7 Copy this URL
+
+ step 8 ->open alertmanager.yml file
+		|
+		api_url: <paste the URL> <== step 9
+		|
+	step 10: restart alertmanager service 
+
+####################################################################################################
+	
+prometheus.yml
+- update alertmanager port
+- add - alert rule file
+|	      .........
+restart prometheus 
+
+alertmanager.yml
+- update channel
+restart alertmanager
+####################################################################################################
+
+cAdvisor
+---------
+ |->exporter - cgroups 
+		|
+		Kernel subsystem - features supports Containers
+							App1  App2      Appn
+	App1 App2					 |     |          |
+	---------------------------------		=====================
+							[LXC] [LXC] ... [LXC]
+							  |__Cgroup_______| 
+		Kernel				=>	[    Kernel       ]	
+	----------------------------------
+							customize resource units
+							|
+							user.slice system.slice machine.slice
+							|
+							container_cpu_load_average ..
+							container_....
+
+container_cpu_load_average_10s{id="/system.slice/filename.service,....} Count  - Container:<port>
+										
+node_cpu_loadavg - remotenode:9100
+		
+process_cpu_  - localhost:9090					
+	
+http://localhost:8080/metrics
+-----------------------------
+container_
+
+- job_name: cadvisor
+  static_configs:
+    - targets: 
+      - localhost:8080
+####################
+
+./kubectl get services
+
+Name	Type	Cluster-IP ..
+		|
+		10.0.2.3
+
+./kubectl apply -f p1.yml
+./minikube service prometheus --url
+http://IP:<port>
+----------------
+ |_ curl http://IP:<port>/metrics
+	 ...
+	 ...
+
+------------------------------------------------------------------------------
+
+	1. download <exporter> file // https://github.com/orgs/prometheus
+	|			
+	2. unzip a file
+	|
+	3. run this file //process - see the port
+	|
+	4. curl <ip>:<port> 
+	   curl <ip>:<port>/metrics
+
+	5. update to prometheus
+		|
+		open a prometheus.yml
+		|
+		...
+		job_name: ...
+		...
+		
+	6. restart prometheus
+
+	|
+	7. Query editor -> MetricName{label} <== regx filter <or> filter
+				promQL
+	|
+	8. rule name <or> metric with promQL => Grafana ->Visualization
+
+------------------------------------------------------------------------------
+
+Service Discovery
+---------------------
+
+prometheus.yml
+
+ - node1:
+ - node2: -> .... 
+ - node3:
+
+systemctl restart prometheus
+
+
+Service Discovery (SD)
+
+
+scrape_configs:
+ - job_name: node							CM   all
+   static_configs:						ansible.cfg ->inventory file
+     - targets:									[dev]
+       {%for v in groups["all"] %}						IP: ..
+		- {{v}}:9100							[QA]
+	{%endfor%}								...
+										[DBA]
+										
+
+  File Service Discovery(FileSD)
+ 
+
+p1.json
+---------
+[{targets:["host01:9100","host02:9100"],"labels":{"team":"infra","job":"node1"}},
+ {targets:["host01:9090"],"labels":{"team":"monitoring","job":"prometheus"}}]
+
+------------
+
+
+
+scrape_configs:
+ - job_name: node							 
+   file_sd_configs:
+   - files:
+       - "p1.json"
+
+
+scrape_configs:
+ - job_name: node							 
+   file_sd_configs:
+   - files:
+       - "*.json"
+
+
+
+scrape_configs:
+ - job_name: oci							 
+   oci_sd_configs:
+   - region: <region>
+     ....
+     ....
+
+####################################################################################################
+
+cp prometheus.yml prometheus.yml_backup
+|
+notepad prometheus.yml
+|
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+    scrape_interval: 10s
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: filesd
+    file_sd_configs:
+      - files:
+          - "*.json"
+
+save and exit
+|
+run prometheus.exe (or) systemctl start prometheus.service
+
+|
+
+file: p1.py
+---------------
+import json
+
+L = [{"targets":["<remoteIP>:9100"],"labels":{"job":"node-oci"}}]
+
+with open("p1.json","w") as wobj:
+	json.dump(L,wobj)
+
+------------------------------------------------
+python3 p1.json
+ <or>
+python p1.json
+###############################################################################################
+
+ prometheus - measurement
+   Vs
+ loki - text 
+
+   [log]
+    ..    ----[promtail]-->------[Loki]---------->[Grafana] ->Visualization
+				    |
+   [log]                            |->log with indexed(labels,metadata - filter..)
+
+
+###############################################################################################
+
+
+
+
+
+
+
+
